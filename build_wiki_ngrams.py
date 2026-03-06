@@ -19,6 +19,9 @@ PAREN_PATTERNS = [
     re.compile(r"（[^（）]*）"),
 ]
 
+ASCII_WORD_RE = re.compile(r"^[A-Za-z]+(?:[.-][A-Za-z]+)*$")
+HAS_ASCII_ALPHA_RE = re.compile(r"[A-Za-z]")
+
 
 DEFAULT_ENTITY_LABELS: tuple[str, ...] = (
     "PERSON",
@@ -47,12 +50,47 @@ def strip_parenthesized(text: str) -> str:
     return re.sub(r"\s+", " ", cur).strip()
 
 
-def is_valid_token(token) -> bool:
-    return not (token.is_space or token.is_punct or token.like_url)
-
-
 def normalize_token_text(text: str) -> str:
     return re.sub(r"\s+", " ", text.strip())
+
+
+def is_valid_token(token) -> bool:
+    text = normalize_token_text(token.text)
+
+    if not text:
+        return False
+
+    if token.is_space or token.is_punct or token.like_url:
+        return False
+
+    if token.like_num:
+        return False
+
+    if not HAS_ASCII_ALPHA_RE.search(text):
+        return False
+
+    if not ASCII_WORD_RE.fullmatch(text):
+        return False
+
+    if len(text) == 1 and text.lower() not in {"a", "i"}:
+        return False
+
+    return True
+
+
+def is_valid_ngram_window(window) -> bool:
+    texts = [normalize_token_text(t.text) for t in window]
+
+    if not all(ASCII_WORD_RE.fullmatch(x) for x in texts):
+        return False
+
+    if all(t.is_stop for t in window):
+        return False
+
+    if not any(not t.is_stop for t in window):
+        return False
+
+    return True
 
 
 def title_entry(nlp, title: str) -> Tuple[int, str, str] | None:
@@ -62,6 +100,8 @@ def title_entry(nlp, title: str) -> Tuple[int, str, str] | None:
     doc = nlp(cleaned)
     toks = [t for t in doc if is_valid_token(t)]
     if not toks:
+        return None
+    if not is_valid_ngram_window(toks):
         return None
     n = len(toks)
     ngram = " ".join(normalize_token_text(t.text) for t in toks)
@@ -97,6 +137,10 @@ def iter_text_windows(
             continue
         for i in range(len(toks) - n + 1):
             window = toks[i : i + n]
+
+            if not is_valid_ngram_window(window):
+                continue
+
             ngram = " ".join(normalize_token_text(t.text) for t in window)
             pos = ",".join(t.pos_ for t in window)
             yield ngram, pos
@@ -110,6 +154,10 @@ def iter_text_windows(
         toks = [t for t in ent if is_valid_token(t)]
         if len(toks) != n:
             continue
+
+        if not is_valid_ngram_window(toks):
+            continue
+
         ngram = " ".join(normalize_token_text(t.text) for t in toks)
         pos = ",".join(t.pos_ for t in toks)
         yield ngram, pos
