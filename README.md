@@ -239,3 +239,15 @@ Main options
 	•	--alpha: additive smoothing constant used for connection costs
 	•	--include-all-observed-pos: dynamically add every observed spaCy POS label
 	•	--keep-num: keep number-like tokens instead of skipping them
+
+```bash
+python build_wiki_ngrams.py --dataset-config 20231101.en --text-only --text-n 3 --format tsv --output-dir out --streaming --output-mode cost
+
+python build_wiki_ngrams.py --dataset-config 20231101.en --text-only --text-n 3 --format tsv --output-dir out --streaming --output-mode prob
+
+python build_wiki_ngrams.py --dataset-config 20231101.en --text-only --text-n 3 --format tsv --output-dir out --streaming --output-mode all
+
+one of the	DET,ADP,DET	800	0.004231000000	5.465120000000	1
+in the world	ADP,DET,NOUN	500	0.002644000000	5.935410000000	301
+I love cats	PRON,VERB,NOUN	2	0.000010000000	11.512925000000	799
+```
