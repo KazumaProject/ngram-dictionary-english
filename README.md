@@ -251,3 +251,17 @@ one of the	DET,ADP,DET	800	0.004231000000	5.465120000000	1
 in the world	ADP,DET,NOUN	500	0.002644000000	5.935410000000	301
 I love cats	PRON,VERB,NOUN	2	0.000010000000	11.512925000000	799
 ```
+
+```bash
+
+sqlite3 out/ngram_counts.sqlite3 "select bucket, count(*) as rows, sum(count) as total_count from counts group by bucket order by bucket;"
+
+python export_from_sqlite.py --db out/ngram_counts.sqlite3 --output-dir out --prefix text --format tsv --output-mode cost
+
+python export_from_sqlite.py --db out/ngram_counts.sqlite3 --output-dir out --prefix title --format tsv --output-mode cost
+
+python export_from_sqlite.py --db out/ngram_counts.sqlite3 --output-dir out --bucket text_4 --format tsv --output-mode cost
+
+python export_from_sqlite.py --db out/ngram_counts.sqlite3 --output-dir out --prefix all --format tsv --output-mode all
+
+```
